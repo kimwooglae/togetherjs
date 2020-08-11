@@ -208,7 +208,7 @@ input.togetherjs-upload-avatar {
 
 .togetherjs-cancel {
   display: inline-block;
-  background: inherit;
+  background-color: @background-color;
   border: none;
   padding:3px 0px;
   margin:0px 0px 0px;
@@ -278,6 +278,7 @@ input.togetherjs-upload-avatar {
     float: right;
     font-weight: bold;
     cursor: pointer;
+    background-color: @background-color;
     background-image: url('./images/icon-close@2x.png');
     background-position:center center;
     background-repeat: no-repeat;
@@ -316,6 +317,7 @@ input.togetherjs-upload-avatar {
     position: relative;
     width: @button-size+20;
     height: @button-size+20;
+    background-color: @background-color;
     background-size: @button-size @button-size;
     background-repeat: no-repeat;
     background-position: center;
@@ -488,21 +490,21 @@ input.togetherjs-upload-avatar {
   .togetherjs-person-name-abbrev {
     color:rgba(51,51,51,1);
     font-family:openSansRegular, Helvetica, sans-serif;
-    padding-top:7px;
+    padding-top: 2px;
   }
 
- .togetherjs-timestamp {
+  .togetherjs-timestamp {
     float: right;
     color:rgba(51,51,51,0.5);
     font-size: 9px !important;
-    padding: 8px 15px 0px 10px;
+    padding: 0 15px;
   }
 
   .togetherjs-chat-content {
     white-space: pre-wrap;
     line-height: 20px;
     font-family: @default-font;
-    padding: 0px 14px 7px;
+    margin: 3px 15px 3px 60px;
   }
 
   #togetherjs-window-pointer-right, #togetherjs-window-pointer-left {

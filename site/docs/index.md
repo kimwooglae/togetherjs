@@ -53,7 +53,7 @@ The core of TogetherJS is the **hub**: this is a server that everyone in a sessi
 
 [WebRTC](http://www.webrtc.org/) is available for **audio chat**, but is not otherwise used.  We are often asked about this, as WebRTC offers data channels that allow browsers to send data directly to other browsers without a server.  Unfortunately you still need a server to establish the connection (the connection strings to connect browsers are quite unwieldy), it only supports one-to-one connections, and that support is limited to only some browsers and browser versions.  Also establishing the connection is significantly slower than Web Sockets. But maybe someday.
 
-Everything that TogetherJS does is based on these messages being passed between browsers.  It doesn't require that everyone be on the same page, all it requires is that everyone in the session know what hub URL to connect to (the URL is essentially the session name). People *can* be on different sites, but the session URL is stored in [sessionStorage](https://developer.mozilla.org/en-US/docs/Web/Guide/API/DOM/Storage#sessionStorage) which is local to one domain (and because we use sessionStorage instead of localStorage, it is local to one tab).  We don't have any techniques implemented to share sessions across multiple sites, but the only barrier is this local storage of session information.
+Everything that TogetherJS does is based on these messages being passed between browsers.  It doesn't require that everyone be on the same page, all it requires is that everyone in the session know what hub URL to connect to (the URL is essentially the session name). People *can* be on different sites, but the session URL is stored in [sessionStorage](https://developer.mozilla.org/en-US/docs/Web/API/Window.sessionStorage) which is local to one domain (and because we use sessionStorage instead of localStorage, it is local to one tab).  We don't have any techniques implemented to share sessions across multiple sites, but the only barrier is this local storage of session information.
 
 Features are built on top of this messaging system.  For instance when you move your mouse around, a `cursor-update` message is sent giving the new mouse position.  Other clients that aren't at the same page as you see the message but ignore it.
 
@@ -65,7 +65,7 @@ Unlike products like [Etherpad](http://etherpad.org/), the [Google Drive Realtim
 
 **TogetherJS relies on the same URL returning the same page**.  When two users are at the same URL we don't force the page to be the same. For example one person might not have permission to view a page: in that case the person will still get a permission denied page, and will be unable to follow along with the first person.  Generally we try to fail gracefully, so inconsistencies will only degrade the experience, not completely break it.  In an ideal situation when two people are using TogetherJS you might allow them both to see an edit screen, but only put permission restrictions on who can actually save those edits.
 
-**TogetherJS relies on the application to synchronize its state**.  If you have a web application that has lots of dynamic client-side content, the two users won't automatically see the same things. TogetherJS isn't like screen sharing: each person is running your web application in their own normal browser environment.  We do [provide tools](#extending-togetherjs-for-your-application) to help you synchronize your state.
+**TogetherJS relies on the application to synchronize its state**.  If you have a web application that has lots of dynamic client-side content, the two users won't automatically see the same things. TogetherJS isn't like screen sharing: each person is running your web application in their own normal browser environment.  We do [provide tools](#extending-togetherjs) to help you synchronize your state.
 
 You can [host your own hub](contributing.html#hosting-the-web-server), which is the only dynamic server-side part of TogetherJS.  But you don't need to host your own server, the server we host is entirely generic and capable of serving multiple sites.  Though if your site is generating a lot of traffic we'll probably want to talk.
 
@@ -134,6 +134,12 @@ The other way to set a variable *after* TogetherJS is loaded is `TogetherJS.conf
 `TogetherJSConfig_youtube`:
     If true, then YouTube videos will be synchronized (i.e., when one person plays or pauses a video, it will play for all people).  This will also load up the YouTube iframe API.
 
+`TogetherJSConfig_ignoreMessages`:
+    Contains a list of all the messages that will be ignored when console logging. Defaults to the list ["cursor-update", "keydown", "scroll-update"]. Will ignore all messages if set to true.
+
+`TogetherJSConfig_ignoreForms`:
+    Contains a list of all the forms that will be ignored. Each item of the list is a jQuery selector matching the form element to be ignored. Defaults to [":password"]. Will ignore all forms if set to true.
+
 There are additional hooks you can configure, which are described in [Extending TogetherJS](#extending-togetherjs).
 
 ## Start TogetherJS Button
@@ -178,7 +184,7 @@ While [configuration](#configuring-togetherjs) covers some of what you can do to
 
 ### Configuring events
 
-Like other configuration, you can configure the event handlers and hooks we describe before `togetherjs(-min).js` is loaded.  Event handlers are just a smidge different.  You'd normally add even handler like `TogetherJS.on("ready", function () {...})`.  To do it as configuration:
+Like other configuration, you can configure the event handlers and hooks we describe before `togetherjs(-min).js` is loaded.  Event handlers are just a smidge different.  You'd normally add event handler like `TogetherJS.on("ready", function () {...})`.  To do it as configuration:
 
 ```js
 TogetherJSConfig_on = {
@@ -403,6 +409,19 @@ You may also want a static copy of the client that you can host yourself.  Run `
 
 The hub changes quite infrequently, so if you just stability then making a static copy of the client will do it for you.  This option is highly recommended for production!
 
+## Localization Support
+
+* Check [translation file](../../togetherjs/locale/en-US.json) for template example if you want to translate into your own language
+* Adding new language inside [locale](../../togetherjs/locale/) directory should be in this format: "th-TH.json", "th.json", "pt-BR.json" or "pt.json" and enable support language in [`availableTranslations`](../../togetherjs/togetherjs.js#L320) inside togetherjs.js file.  Note that your file name and language names in  your configuration should use hyphens in accord with [BCP 47](http://tools.ietf.org/html/bcp47), not underscores.
+
+To get your language display you can enable it by:
+
+``` html
+<script>
+  var TogetherJSConfig_lang = "pt-BR";
+</script>
+```
+
 ## Browser Support
 
 TogetherJS is intended for relatively newer browsers.  Especially as we experiment with what we're doing, supporting older browsers causes far more challenge than it is an advantage.
@@ -441,6 +460,20 @@ TogetherJSConfig_hubBase = "https://myhub.com";
 
 If you are curious about the exact version of code on the server it should be always be [server.js on master](https://github.com/mozilla/togetherjs/blob/master/hub/server.js), and you can double-check by fetching [`/server-source`](https://hub.togetherjs.com/server-source).
 
+### Deploying the hub server to Heroku
+
+You need a Heroku account. If you don't have one, their [Node.js getting started guide](https://devcenter.heroku.com/articles/getting-started-with-nodejs) is a good place to start.
+
+What's about to happen: we clone the repo and create a new Heroku app within it. We need to set the HOST environment variable to get the app to bind to 0.0.0.0 instead of 127.0.0.1. It'll pick up the PORT variable automatically. We also need to enable WebSockets for the app. Then, push the code and we should be good to go!
+
+	git clone git@github.com:mozilla/togetherjs.git
+	cd togetherjs
+	heroku create
+	heroku config:add HOST=0.0.0.0
+	git push heroku master
+
+Make note of the app name after running `heroku create` You can check that everything is running by going to http://your-app-name-here.herokuapp.com/status
+
 ## Addons
 
 There is an addon for Firefox in [addon/](https://github.com/mozilla/togetherjs/tree/develop/addon).
@@ -454,22 +487,6 @@ A simple way to install is simply to [click this link](https://togetherjs.com/to
 ### Building
 
 You can build the addon using the [Addon-SDK](https://addons.mozilla.org/en-US/developers/builder). Once you've installed the SDK, go into the `addon/` directory and run `cfx xpi` to create an XPI (packaged addon file) or `cfx run` to start up Firefox with the addon installed (for development).
-
-## Deploying the hub server to Heroku
-
-You need a Heroku account. If you don't have one, their [Node.js getting started guide](https://devcenter.heroku.com/articles/getting-started-with-nodejs) is a good place to start.
-
-What's about to happen: we clone the repo and create a new Heroku app within it. We need to set the HOST environment variable to get the app to bind to 0.0.0.0 instead of 127.0.0.1. It'll pick up the PORT variable automatically. We also need to enable WebSockets for the app. Then, push the code and we should be good to go!
-
-	git clone git@github.com:mozilla/togetherjs.git
-	cd togetherjs
-	heroku create
-	heroku config:add HOST=0.0.0.0
-	heroku labs:enable websockets
-	git push heroku master
-
-Make note of the app name after running `heroku create` You can check that everything is running by going to http://your-app-name-here.herokuapp.com/status
-
 
 ## Getting Help
 
